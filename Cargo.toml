@@ -1,0 +1,13 @@
+[package]
+name = "fireflydroid"
+version = "0.1.0"
+edition = "2024"
+autobins = false
+
+[lib]
+path = "src/main.rs"
+crate-type = ["cdylib"]
+
+[dependencies]
+macroquad = "0.4.14"
+wasmi = "1.0.7"
