@@ -171,7 +171,19 @@ async fn main() {
             },
         );
 
-        draw_circle_lines(ui.pad_pos.x, ui.pad_pos.y, ui.pad_r, 5., BLACK);
+        draw_circle_lines(ui.pad.p.x, ui.pad.p.y, ui.pad.r, 5., BLACK);
+
+        for (label, button) in ["S", "E", "W", "N"].iter().zip(&ui.buttons) {
+            draw_circle(button.p.x, button.p.y, button.r, BLACK);
+            let size = get_text_center(label, None, button.r as u16, 1.0, 0.);
+            draw_text(
+                label,
+                button.p.x - size.x,
+                button.p.y - size.y,
+                button.r,
+                WHITE,
+            );
+        }
 
         next_frame().await;
     }
@@ -180,8 +192,20 @@ async fn main() {
 struct UiPos {
     x: f32,
     size: Vec2,
-    pad_pos: Vec2,
-    pad_r: f32,
+    pad: Button,
+    buttons: [Button; 4],
+}
+
+#[derive(Default)]
+struct Button {
+    p: Vec2,
+    r: f32,
+}
+
+impl From<(Vec2, f32)> for Button {
+    fn from((p, r): (Vec2, f32)) -> Self {
+        Button { p, r }
+    }
 }
 
 fn calc_ui_pos() -> UiPos {
@@ -198,18 +222,33 @@ fn calc_ui_pos() -> UiPos {
         (x, w, h)
     };
     let size = vec2(w, h);
-    let (pad_pos, pad_r) = if portrait {
+    let pad: Button = if portrait {
         let x = screen_width() / 3.;
         let y = screen_height() - x;
         (vec2(x, y), x)
     } else {
         (vec2(x / 2., x), x / 2.)
+    }
+    .into();
+
+    let buttons = if portrait {
+        let center = vec2(pad.p.x * 2.2, pad.p.y - pad.p.x * 1.3);
+        let offset = pad.p.x / 2.;
+        let r = offset * 0.66;
+        [
+            Button::from((center + vec2(0., offset), r)),
+            Button::from((center + vec2(offset, 0.), r)),
+            Button::from((center - vec2(offset, 0.), r)),
+            Button::from((center - vec2(0., offset), r)),
+        ]
+    } else {
+        Default::default()
     };
     UiPos {
         x,
         size,
-        pad_pos,
-        pad_r,
+        pad,
+        buttons,
     }
 }
 

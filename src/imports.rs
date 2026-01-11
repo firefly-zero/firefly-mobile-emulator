@@ -66,7 +66,24 @@ pub fn setup(linker: &mut Linker<HostState>, project_path: PathBuf) -> Result<()
     linker.func_wrap(
         "input",
         "read_buttons",
-        |_caller: Caller<'_, HostState>, peer: u32| -> u32 { 0 },
+        |_caller: Caller<'_, HostState>, peer: u32| -> u32 {
+            let ui = calc_ui_pos();
+
+            let mut val = 0;
+            for touch in touches() {
+                let p = touch.position;
+                for (i, button) in ui.buttons.iter().enumerate() {
+                    if p.distance_squared(button.p) < button.r * button.r {
+                        val |= 1 << i;
+                    }
+                }
+            }
+            if is_key_down(KeyCode::Back) {
+                // Menu key
+                val |= 1 << 4;
+            }
+            val
+        },
     )?;
 
     linker.func_wrap(
@@ -74,12 +91,12 @@ pub fn setup(linker: &mut Linker<HostState>, project_path: PathBuf) -> Result<()
         "read_pad",
         |_caller: Caller<'_, HostState>, peer: u32| -> u32 {
             let ui = calc_ui_pos();
-            let r = ui.pad_r;
+            let r = ui.pad.r;
             let r2 = r * r;
             for touch in touches() {
                 let p = touch.position;
-                if p.distance_squared(ui.pad_pos) < r2 {
-                    let pos = (p - ui.pad_pos) * 1000. / ui.pad_r;
+                if p.distance_squared(ui.pad.p) < r2 {
+                    let pos = (p - ui.pad.p) * 1000. / ui.pad.r;
                     let x = (pos.x as i32 as u32) << 16;
                     let y = (-pos.y as i32 as u32) & 0xFFFF;
                     return x | y;
