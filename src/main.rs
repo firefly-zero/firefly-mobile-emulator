@@ -1,4 +1,8 @@
-use std::path::Path;
+use std::{
+    f32::consts::PI,
+    ops::{Neg, Not},
+    path::Path,
+};
 
 use macroquad::prelude::*;
 use std::fmt::Write as _;
@@ -127,9 +131,11 @@ async fn main() {
         },
     };
 
-    let h = screen_height() / screen_width() * 240.;
-    let camera = Camera2D::from_display_rect(Rect::new(0., h, 240., -h));
-    set_camera(&camera);
+    let target = render_target(240, 160);
+    let mut camera = Camera2D::from_display_rect(Rect::new(0., 160., 240., -160.));
+    let screen = target.texture.clone();
+    screen.set_filter(FilterMode::Nearest);
+    camera.render_target = Some(target);
 
     instance
         .get_typed_func::<(), ()>(&store, "boot")
@@ -138,7 +144,8 @@ async fn main() {
         .unwrap();
 
     loop {
-        clear_background(GREEN);
+        push_camera_state();
+        set_camera(&camera);
         if let Ok(update) = instance.get_typed_func::<(), ()>(&store, "update") {
             update.call(&mut store, ()).unwrap();
         }
@@ -148,6 +155,35 @@ async fn main() {
             .unwrap()
             .call(&mut store, ())
             .unwrap();
+        pop_camera_state();
+        clear_background(GRAY);
+
+        let portrait = screen_width() < screen_height();
+
+        let (x, w, h) = if portrait {
+            let w = screen_width();
+            let h = w / 240. * 160.;
+            (0., w, h)
+        } else {
+            let h = screen_height();
+            let w = h / 160. * 240.;
+            let x = screen_width() / 2. - w / 2.;
+            (x, w, h)
+        };
+        draw_texture_ex(
+            &screen,
+            x,
+            0.,
+            WHITE,
+            DrawTextureParams {
+                dest_size: Some(vec2(w, h)),
+                source: None,
+                rotation: 0.,
+                flip_x: false,
+                flip_y: false,
+                pivot: None,
+            },
+        );
 
         next_frame().await;
     }
