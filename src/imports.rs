@@ -3,7 +3,7 @@ use std::path::PathBuf;
 
 use wasmi::*;
 
-use crate::{HostState, mem, read_str};
+use crate::{HostState, calc_ui_pos, mem, read_str};
 
 pub fn setup(linker: &mut Linker<HostState>, project_path: PathBuf) -> Result<(), Error> {
     linker.func_wrap(
@@ -66,13 +66,27 @@ pub fn setup(linker: &mut Linker<HostState>, project_path: PathBuf) -> Result<()
     linker.func_wrap(
         "input",
         "read_buttons",
-        |_caller: Caller<'_, HostState>, arg0: u32| -> u32 { 0 },
+        |_caller: Caller<'_, HostState>, peer: u32| -> u32 { 0 },
     )?;
 
     linker.func_wrap(
         "input",
         "read_pad",
-        |_caller: Caller<'_, HostState>, arg0: u32| -> u32 { 0 },
+        |_caller: Caller<'_, HostState>, peer: u32| -> u32 {
+            let ui = calc_ui_pos();
+            let r = ui.pad_r;
+            let r2 = r * r;
+            for touch in touches() {
+                let p = touch.position;
+                if p.distance_squared(ui.pad_pos) < r2 {
+                    let pos = (p - ui.pad_pos) * 1000. / ui.pad_r;
+                    let x = (pos.x as i32 as u32) << 16;
+                    let y = (-pos.y as i32 as u32) & 0xFFFF;
+                    return x | y;
+                }
+            }
+            0xFFFF
+        },
     )?;
 
     linker.func_wrap(

@@ -1,8 +1,4 @@
-use std::{
-    f32::consts::PI,
-    ops::{Neg, Not},
-    path::Path,
-};
+use std::path::Path;
 
 use macroquad::prelude::*;
 use std::fmt::Write as _;
@@ -158,25 +154,15 @@ async fn main() {
         pop_camera_state();
         clear_background(GRAY);
 
-        let portrait = screen_width() < screen_height();
+        let ui = calc_ui_pos();
 
-        let (x, w, h) = if portrait {
-            let w = screen_width();
-            let h = w / 240. * 160.;
-            (0., w, h)
-        } else {
-            let h = screen_height();
-            let w = h / 160. * 240.;
-            let x = screen_width() / 2. - w / 2.;
-            (x, w, h)
-        };
         draw_texture_ex(
             &screen,
-            x,
+            ui.x,
             0.,
             WHITE,
             DrawTextureParams {
-                dest_size: Some(vec2(w, h)),
+                dest_size: Some(ui.size),
                 source: None,
                 rotation: 0.,
                 flip_x: false,
@@ -185,7 +171,45 @@ async fn main() {
             },
         );
 
+        draw_circle_lines(ui.pad_pos.x, ui.pad_pos.y, ui.pad_r, 5., BLACK);
+
         next_frame().await;
+    }
+}
+
+struct UiPos {
+    x: f32,
+    size: Vec2,
+    pad_pos: Vec2,
+    pad_r: f32,
+}
+
+fn calc_ui_pos() -> UiPos {
+    let portrait = screen_width() < screen_height();
+
+    let (x, w, h) = if portrait {
+        let w = screen_width();
+        let h = w / 240. * 160.;
+        (0., w, h)
+    } else {
+        let h = screen_height();
+        let w = h / 160. * 240.;
+        let x = screen_width() / 2. - w / 2.;
+        (x, w, h)
+    };
+    let size = vec2(w, h);
+    let (pad_pos, pad_r) = if portrait {
+        let x = screen_width() / 3.;
+        let y = screen_height() - x;
+        (vec2(x, y), x)
+    } else {
+        (vec2(x / 2., x), x / 2.)
+    };
+    UiPos {
+        x,
+        size,
+        pad_pos,
+        pad_r,
     }
 }
 
