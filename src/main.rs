@@ -4,7 +4,9 @@ use macroquad::prelude::*;
 use std::fmt::Write as _;
 use wasmi::*;
 
+mod catalog;
 mod imports;
+mod ui;
 
 struct HostState {
     colors: [Color; 17],
@@ -18,6 +20,8 @@ impl HostState {
 
 #[macroquad::main("fireflydroid")]
 async fn main() {
+    catalog::list().await;
+
     let project_path = Path::new(
         "/data/user/0/com.mohammedkhc.ide.rust/files/home/.local/share/firefly/roms/sys/input-test/",
     ).to_owned();
