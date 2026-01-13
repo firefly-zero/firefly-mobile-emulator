@@ -1,7 +1,6 @@
-use kaolin::{
-    Kaolin, commands::RenderCommand, kaolin::scope::KaolinScope, renderers::KaolinRenderer,
-    style::KaolinColor,
-};
+use std::collections::HashSet;
+
+use kaolin::prelude::*;
 use macroquad::prelude::*;
 
 #[derive(Default, PartialEq, Copy, Clone)]
@@ -25,6 +24,8 @@ impl KaolinColor for Color {
 
 pub struct Renderer {
     kaolin: Kaolin<Color>,
+    touches: Vec<Touch>,
+    pub clicked: HashSet<String>,
 }
 
 impl Renderer {
@@ -38,17 +39,21 @@ impl Renderer {
                 } = measure_text(text, None, config.font_size as u16, 1.0);
                 (width.into(), config.font_size as f64 * 1.1)
             }),
+            touches: vec![],
+            clicked: HashSet::new(),
         }
     }
 }
 
-pub enum Nothing {}
-
-impl<'frame> KaolinRenderer<'frame, Color, Nothing> for Renderer {
+impl<'frame> KaolinRenderer<'frame, Color, &'frame str> for Renderer {
     fn draw(
         &mut self,
-        draw_fn: impl FnOnce(KaolinScope<'frame, Color, Nothing>) -> KaolinScope<'frame, Color, Nothing>,
+        draw_fn: impl FnOnce(
+            KaolinScope<'frame, Color, &'frame str>,
+        ) -> KaolinScope<'frame, Color, &'frame str>,
     ) {
+        self.touches = touches();
+        self.clicked.clear();
         let commands = self.kaolin.draw(draw_fn);
         for command in commands {
             match command {
@@ -61,6 +66,7 @@ impl<'frame> KaolinRenderer<'frame, Color, Nothing> for Renderer {
                     id: _,
                     corner_radius: _,
                     border,
+                    custom,
                 } => {
                     draw_rectangle(x as f32, y as f32, width as f32, height as f32, color.0);
                     draw_rectangle_lines(
@@ -71,6 +77,12 @@ impl<'frame> KaolinRenderer<'frame, Color, Nothing> for Renderer {
                         border.width,
                         border.color.0,
                     );
+                    if !custom.is_empty() {
+                        let rect = Rect::new(x as f32, y as f32, width as f32, height as f32);
+                        if self.touches.iter().any(|t| rect.contains(t.position)) {
+                            self.clicked.insert(custom.to_owned());
+                        }
+                    }
                 }
                 RenderCommand::DrawText {
                     text,
@@ -89,6 +101,14 @@ impl<'frame> KaolinRenderer<'frame, Color, Nothing> for Renderer {
                         color.0,
                     );
                 }
+                RenderCommand::Custom {
+                    id,
+                    x,
+                    y,
+                    width,
+                    height,
+                    data,
+                } => todo!(),
             }
         }
     }

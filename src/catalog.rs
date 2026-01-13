@@ -3,7 +3,7 @@ use macroquad::prelude::*;
 use miniserde::Deserialize;
 use std::collections::HashMap;
 
-use crate::ui;
+use crate::ui::{self};
 
 const BASE_URL: &str = "https://catalog.fireflyzero.com/";
 const LIST_URL: &str = "https://catalog.fireflyzero.com/apps.json";
@@ -46,7 +46,6 @@ pub async fn list() {
                 draw_text(&format!("{e:?}"), 0., 0., 50., RED);
                 next_frame().await;
             }
-            pop_camera_state();
             return;
         }
     };
@@ -100,6 +99,7 @@ pub async fn list() {
                             for app in &apps {
                                 k = k.styled(
                                     FlexStyle::new()
+                                        .custom(app.id.as_str())
                                         .background_color(GRAY.into())
                                         .border(Border {
                                             width: 3.,
@@ -137,44 +137,52 @@ pub async fn list() {
             )
         });
 
+        if let Some(id) = ui.clicked.iter().next() {
+            app(id).await;
+        }
+
         next_frame().await
     }
-    pop_camera_state();
+}
+
+pub async fn app(id: &str) {
+    let url = format!("{BASE_URL}{id}.json");
+    let resp = match ureq::get(&url).call() {
+        Ok(r) => r,
+        Err(_) => todo!(),
+    };
+    let mut body = match resp.into_body().read_to_string() {
+        Ok(body) => body,
+        Err(_) => todo!(),
+    };
+    let app: App = match miniserde::json::from_str(&body) {
+        Ok(app) => app,
+        Err(_) => todo!(),
+    };
+    let mut ui = ui::Renderer::new(screen_width() as i32, screen_height() as i32);
+    while !is_key_pressed(KeyCode::Back) {
+        clear_background(GRAY);
+        ui.draw(|k| {
+            let style = TextStyle::new().font_size(80.0).color(BLACK.into());
+            k.styled(
+                FlexStyle::new()
+                    .background_color(GRAY.into())
+                    .layout(Layout::new().direction(Direction::TopToBottom))
+                    .sizing(sizing!(grow!())),
+                |k| {
+                    k.text(
+                        &app.name,
+                        TextStyle::new().font_size(150.0).color(BLACK.into()),
+                    )
+                    .text(&app.short, style)
+                },
+            )
+        });
+        next_frame().await;
+    }
 }
 
 /*
-pub fn cmd_catalog_show(args: &CatalogShowArgs) -> Result<()> {
-    if args.id.contains('.') {
-        show_app(args)
-    } else {
-        show_author(args)
-    }
-}
-
-pub fn show_app(args: &CatalogShowArgs) -> Result<()> {
-    let url = format!("{BASE_URL}{}.json", args.id);
-    let resp = ureq::get(&url).call().context("send request")?;
-    let mut body = resp.into_body().into_reader();
-    let app: App = serde_json::from_reader(&mut body).context("parse JSON")?;
-    println!("{} {}", col("title"), app.name);
-    println!("{} {}", col("author"), app.author.name);
-    println!("{} {}", col("added"), app.added);
-    println!("{} {}", col("short"), app.short);
-    println!("{}", col("categories"));
-    for category in app.categories {
-        println!("  {category}");
-    }
-    if let Some(links) = app.links {
-        println!("{}", col("links"));
-        for (name, url) in links {
-            println!("  {}: {}", name.cyan(), url);
-        }
-    }
-    println!("{} {}", col("download"), app.download);
-    println!("{}\n{}", col("description"), app.desc);
-    Ok(())
-}
-
 pub fn show_author(args: &CatalogShowArgs) -> Result<()> {
     let url = format!("{BASE_URL}{}.json", args.id);
     let resp = ureq::get(&url).call().context("send request")?;
