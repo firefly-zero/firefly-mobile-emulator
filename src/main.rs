@@ -1,165 +1,88 @@
-use std::path::Path;
+use std::{
+    path::PathBuf,
+    sync::{Arc, Mutex},
+};
 
+use firefly_hal::{DeviceConfig, DeviceImpl};
+use firefly_runtime::{FullID, NetHandler};
+use kaolin::{prelude::*, style::TextStyle};
 use macroquad::prelude::*;
-use std::fmt::Write as _;
-use wasmi::*;
 
 mod catalog;
-mod imports;
+mod drawing;
+mod input;
 mod ui;
 
 struct HostState {
-    colors: [Color; 17],
-}
-
-impl HostState {
-    fn col(&self, i: i32) -> Color {
-        self.colors[i as usize]
-    }
+    screen: Image,
 }
 
 #[macroquad::main("fireflydroid")]
 async fn main() {
+    set_panic_handler(|msg, backtrace| async move {
+        let mut ui = ui::Renderer::new(screen_width() as i32, screen_height() as i32);
+
+        loop {
+            clear_background(RED);
+            ui.draw(|k| {
+                k.styled(
+                    FlexStyle::new()
+                        .background_color(GRAY.into())
+                        .layout(Layout::new().direction(Direction::TopToBottom))
+                        .sizing(sizing!(grow!())),
+                    |k| {
+                        let style = TextStyle::new().font_size(80.0).color(BLACK.into());
+                        k.text(&msg, style).text(&backtrace, style)
+                    },
+                )
+            });
+            next_frame().await;
+        }
+    });
+
     catalog::list().await;
+}
 
-    let project_path = Path::new(
-        "/data/user/0/com.mohammedkhc.ide.rust/files/home/.local/share/firefly/roms/sys/input-test/",
-    ).to_owned();
-    let wasm = std::fs::read(project_path.join("_bin")).unwrap();
-    // First step is to create the Wasm execution engine with some config.
-    //
-    // In this example we are using the default configuration.
-    let engine = Engine::default();
-    // Now we can compile the above Wasm module with the given Wasm source.
-    let module = Module::new(&engine, wasm).unwrap();
+async fn play(id: &FullID) -> Result<(), firefly_runtime::Error> {
+    let project_path = dir();
 
-    let mut store = Store::new(
-        &engine,
-        HostState {
-            colors: [
-                Color::from_rgba(0, 0, 0, 0),
-                Color::from_hex(0x1A1C2C),
-                Color::from_hex(0x5D275D),
-                Color::from_hex(0xB13E53),
-                Color::from_hex(0xEF7D57),
-                Color::from_hex(0xFFCD75),
-                Color::from_hex(0xA7F070),
-                Color::from_hex(0x38B764),
-                Color::from_hex(0x257179),
-                Color::from_hex(0x29366F),
-                Color::from_hex(0x3B5DC9),
-                Color::from_hex(0x41A6F6),
-                Color::from_hex(0x73EFF7),
-                Color::from_hex(0xF4F4F4),
-                Color::from_hex(0x94B0C2),
-                Color::from_hex(0x566C86),
-                Color::from_hex(0x333C57),
-            ],
-        },
-    );
-
-    // A linker can be used to instantiate Wasm modules.
-    // The job of a linker is to satisfy the Wasm module's imports.
-    let mut linker = <Linker<HostState>>::new(&engine);
-    // We are required to define all imports before instantiating a Wasm module.
-    imports::setup(&mut linker, project_path).unwrap();
-
-    #[expect(unused_variables)]
-    let instance = match linker.instantiate_and_start(&mut store, &module) {
-        Ok(instance) => instance,
-        Err(e) => match e.kind() {
-            errors::ErrorKind::TrapCode(trap_code) => todo!(),
-            errors::ErrorKind::Message(_) => todo!(),
-            errors::ErrorKind::I32ExitStatus(_) => todo!(),
-            errors::ErrorKind::Host(host_error) => todo!(),
-            errors::ErrorKind::Global(global_error) => todo!(),
-            errors::ErrorKind::Memory(memory_error) => todo!(),
-            errors::ErrorKind::Table(table_error) => todo!(),
-            errors::ErrorKind::Linker(linker_error) => match linker_error {
-                errors::LinkerError::DuplicateDefinition { import_name } => todo!(),
-                errors::LinkerError::MissingDefinition { name, ty } => {
-                    let mut args = String::new();
-                    for (i, arg) in ty.func().unwrap().params().iter().enumerate() {
-                        let arg = val_to_ty(arg);
-                        writeln!(args, "arg{i}: {},", arg).unwrap();
-                    }
-                    let ret = match ty.func().unwrap().results() {
-                        [] => "()",
-                        [ret] => val_to_ty(ret),
-                        _ => panic!(),
-                    };
-
-                    std::fs::write(
-                        Path::new("/data/data/com.mohammedkhc.ide.rust/files/home/fireflydroid")
-                            .join("missing_def.rs"),
-                        format!(
-                            r##"
-    linker
-        .func_wrap(
-            "{}",
-            "{}",
-            |_caller: Caller<'_, HostState>,
-            {args}
-            | -> {ret}
-            {{
-            
-            }})?;
-"##,
-                            name.module(),
-                            name.name()
-                        ),
-                    )
-                    .unwrap();
-                    return;
-                }
-                errors::LinkerError::InvalidTypeDefinition {
-                    name,
-                    expected,
-                    found,
-                } => todo!(),
-            },
-            errors::ErrorKind::Instantiation(instantiation_error) => todo!(),
-            errors::ErrorKind::Fuel(fuel_error) => todo!(),
-            errors::ErrorKind::Func(func_error) => todo!(),
-            errors::ErrorKind::Read(read_error) => todo!(),
-            errors::ErrorKind::Wasm(binary_reader_error) => todo!(),
-            errors::ErrorKind::Translation(translation_error) => todo!(),
-            errors::ErrorKind::Limits(enforced_limits_error) => todo!(),
-            errors::ErrorKind::Ir(error) => todo!(),
-            errors::ErrorKind::Wat(error) => todo!(),
-            _ => todo!(),
+    let state = HostState {
+        screen: Image {
+            width: 240,
+            height: 160,
+            bytes: vec![0; 240 * 160 * 4],
         },
     };
 
-    let target = render_target(240, 160);
-    let mut camera = Camera2D::from_display_rect(Rect::new(0., 160., 240., -160.));
-    let screen = target.texture.clone();
-    screen.set_filter(FilterMode::Nearest);
-    camera.render_target = Some(target);
+    let device = DeviceConfig {
+        root: project_path.to_owned(),
+        ..DeviceConfig::default()
+    };
 
-    instance
-        .get_typed_func::<(), ()>(&store, "boot")
-        .unwrap()
-        .call(&mut store, ())
-        .unwrap();
-
+    let device = DeviceImpl::new(device);
+    let config = firefly_runtime::RuntimeConfig {
+        id: Some(id.clone()),
+        device,
+        display: state,
+        net_handler: NetHandler::None,
+    };
+    let mut runtime = firefly_runtime::Runtime::new(config)?;
+    runtime.start()?;
     loop {
-        push_camera_state();
-        set_camera(&camera);
-        if let Ok(update) = instance.get_typed_func::<(), ()>(&store, "update") {
-            update.call(&mut store, ()).unwrap();
-        }
-
-        instance
-            .get_typed_func::<(), ()>(&store, "render")
-            .unwrap()
-            .call(&mut store, ())
-            .unwrap();
-        pop_camera_state();
         clear_background(GRAY);
 
-        let ui = calc_ui_pos();
+        let exit = runtime.update()?;
+        // Exit requested. Finalize runtime and get ownership of the device back.
+        if exit {
+            let _config = runtime.finalize()?;
+            return Ok(());
+        }
 
+        let ui = calc_ui_pos();
+        let input = input::input(&ui);
+        runtime.device_mut().update_input(input);
+
+        let screen = Texture2D::from_image(&runtime.display_mut().screen);
         draw_texture_ex(
             &screen,
             ui.x,
@@ -256,26 +179,12 @@ fn calc_ui_pos() -> UiPos {
     }
 }
 
-fn read_str(caller: &Caller<'_, HostState>, addr: u32, len: u32) -> String {
-    let mut p = vec![0; len as usize];
-    mem(caller).read(caller, addr as usize, &mut p).unwrap();
-    String::from_utf8(p).unwrap()
-}
+fn dir() -> PathBuf {
+    let Some(dirs) = directories::ProjectDirs::from("de", "oliobk", "fireflydroid") else {
+        return PathBuf::from("/data/data/de.oliobk.fireflydroid");
+    };
 
-fn mem(caller: &Caller<'_, HostState>) -> Memory {
-    caller.get_export("memory").unwrap().into_memory().unwrap()
-}
-
-fn val_to_ty(arg: &ValType) -> &'static str {
-    match arg {
-        ValType::I32 => "u32",
-        ValType::I64 => "u64",
-        ValType::F32 => "f32",
-        ValType::F64 => "f64",
-        ValType::V128 => todo!(),
-        ValType::FuncRef => todo!(),
-        ValType::ExternRef => todo!(),
-    }
+    dirs.cache_dir().to_owned()
 }
 
 // DON'T REMOVE, This function is the entrypoint on Android.
