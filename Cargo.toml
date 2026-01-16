@@ -1,0 +1,21 @@
+[package]
+name = "fireflydroid"
+version = "0.1.0"
+edition = "2024"
+autobins = false
+
+[lib]
+path = "src/main.rs"
+crate-type = ["cdylib"]
+
+[dependencies]
+directories = "6.0.0"
+embedded-graphics = "0.8.1"
+firefly-hal = {path = "../firefly-hal"}
+firefly-runtime = {path = "../firefly-runtime"}
+firefly-types = "0.7.1"
+kaolin = { path = "../kaolin"}
+macroquad = { version = "0.4.14", features = ["backtrace"] }
+miniserde = "0.1.45"
+ureq = "3.1.4"
+zip = { version = "7.0.0", default-features = false, features = ["zstd"] }
