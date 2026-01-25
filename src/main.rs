@@ -71,8 +71,9 @@ async fn play(id: &FullID) -> Result<(), firefly_runtime::Error> {
         let exit = runtime.update()?;
         // Exit requested. Finalize runtime and get ownership of the device back.
         if exit {
-            let _config = runtime.finalize()?;
-            return Ok(());
+            let config = runtime.finalize()?;
+            runtime = firefly_runtime::Runtime::new(config)?;
+            runtime.start()?;
         }
 
         let ui = calc_ui_pos();
