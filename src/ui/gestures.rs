@@ -1,34 +1,47 @@
+use std::f32::consts::PI;
+
 use macroquad::prelude::*;
 
-pub fn gesture(positions: &[Vec2]) -> Option<Gesture> {
+use crate::ui::TouchPoint;
+
+pub fn gesture(positions: &[TouchPoint]) -> Option<Gesture> {
     let [start, ref mid @ .., end] = *positions else {
         return None;
     };
     let v = end - start;
-    let l = v.length();
+    let l = v.pos.length();
 
-    if l < 10. {
-        let average = positions.iter().sum::<Vec2>() / (positions.len() as f32);
+    if v.time < 0.25 && l < 10. {
+        // quick tap with little movement
+        let average = positions.iter().map(|p| p.pos).sum::<Vec2>() / (positions.len() as f32);
         let max_diff = positions
             .iter()
-            .map(|&p| (p - average).length_squared() as u32)
+            .map(|p| (p.pos - average).length_squared() as u32)
             .max()
             .unwrap();
         if max_diff < 10 * 10 {
             return Some(Gesture::Tap(average));
         }
-    } else if l > 200. {
-        for &p in mid {
-            let p = p - start;
-            let d = p.perp_dot(v).abs() / l;
-            debug!("dist: {}", d);
+    } else if v.time < 0.6 && l > 200. {
+        let start = start.pos;
+        let mut prev = start;
+        for p in mid {
+            if (p.pos - prev).angle_between(v.pos) > PI / 3. {
+                // Don't allow going backwards
+                return None;
+            }
+            prev = p.pos;
+            let p = p.pos - start;
+            let d = p.perp_dot(v.pos).abs() / l;
             if d > l * 0.1 {
                 return None;
             }
         }
-        return Some(Gesture::Swipe { start, end });
+        return Some(Gesture::Swipe {
+            start,
+            end: end.pos,
+        });
     }
-    debug!("{}", positions.len());
     None
 }
 

@@ -1,10 +1,11 @@
+
 use std::{
     collections::{HashMap, HashSet},
-    f32::consts::FRAC_PI_4,
+    f32::consts::FRAC_PI_4,ops::Sub,
 };
 
 use kaolin::prelude::*;
-use macroquad::prelude::*;
+use macroquad::{miniquad::date::now, prelude::*};
 
 use crate::ui::gestures::{Gesture, gesture};
 
@@ -31,7 +32,7 @@ impl KaolinColor for Color {
 
 pub struct Renderer {
     kaolin: Kaolin<Color>,
-    touches: HashMap<u64, Vec<Vec2>>,
+    touches: HashMap<u64, Vec<TouchPoint>>,
     tapped: Vec<Vec2>,
     pub clicked: HashSet<String>,
     /// How far to scroll each frame
@@ -60,6 +61,23 @@ impl Renderer {
     }
 }
 
+#[derive(Copy, Clone)]
+struct TouchPoint {
+    time: f64,
+    pos: Vec2,
+}
+
+impl Sub for TouchPoint {
+    type Output = Self;
+
+    fn sub(self, rhs: Self) -> Self {
+        Self {
+            pos: self.pos - rhs.pos,
+            time: self.time - rhs.time,
+        }
+    }
+}
+
 impl<'frame> KaolinRenderer<'frame, Color, &'frame str> for Renderer {
     fn draw(
         &mut self,
@@ -68,7 +86,12 @@ impl<'frame> KaolinRenderer<'frame, Color, &'frame str> for Renderer {
         ) -> KaolinScope<'frame, Color, &'frame str>,
     ) {
         self.tapped.clear();
+        let time = now();
         for touch in touches() {
+            let p = TouchPoint {
+                pos: touch.position,
+                time,
+            };
             match touch.phase {
                 TouchPhase::Started => {
                     self.touches.insert(touch.id, vec![touch.position]);
