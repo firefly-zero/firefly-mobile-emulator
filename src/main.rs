@@ -1,7 +1,4 @@
-use std::{
-    path::PathBuf,
-    sync::{Arc, Mutex},
-};
+use std::path::PathBuf;
 
 use firefly_hal::{DeviceConfig, DeviceImpl};
 use firefly_runtime::{FullID, NetHandler};
@@ -74,8 +71,9 @@ async fn play(id: &FullID) -> Result<(), firefly_runtime::Error> {
         let exit = runtime.update()?;
         // Exit requested. Finalize runtime and get ownership of the device back.
         if exit {
-            let _config = runtime.finalize()?;
-            return Ok(());
+            let config = runtime.finalize()?;
+            runtime = firefly_runtime::Runtime::new(config)?;
+            runtime.start()?;
         }
 
         let ui = calc_ui_pos();
@@ -83,6 +81,7 @@ async fn play(id: &FullID) -> Result<(), firefly_runtime::Error> {
         runtime.device_mut().update_input(input);
 
         let screen = Texture2D::from_image(&runtime.display_mut().screen);
+        screen.set_filter(FilterMode::Nearest);
         draw_texture_ex(
             &screen,
             ui.x,
