@@ -1,7 +1,6 @@
-
 use std::{
     collections::{HashMap, HashSet},
-    f32::consts::FRAC_PI_4,ops::Sub,
+    ops::Sub,
 };
 
 use kaolin::prelude::*;
@@ -94,20 +93,17 @@ impl<'frame> KaolinRenderer<'frame, Color, &'frame str> for Renderer {
             };
             match touch.phase {
                 TouchPhase::Started => {
-                    self.touches.insert(touch.id, vec![touch.position]);
+                    self.touches.insert(touch.id, vec![p]);
                 }
                 TouchPhase::Stationary => {}
                 TouchPhase::Moved => {
-                    self.touches
-                        .entry(touch.id)
-                        .or_default()
-                        .push(touch.position);
+                    self.touches.entry(touch.id).or_default().push(p);
                 }
                 TouchPhase::Ended => {
                     let Some(mut points) = self.touches.remove(&touch.id) else {
                         continue;
                     };
-                    points.push(touch.position);
+                    points.push(p);
                     let gesture = gesture(&points);
                     match gesture {
                         Some(Gesture::Tap(p)) => self.tapped.push(p),
