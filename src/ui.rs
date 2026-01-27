@@ -30,7 +30,6 @@ impl KaolinColor for Color {
 }
 
 pub struct Renderer {
-    kaolin: Kaolin<Color>,
     touches: HashMap<u64, Vec<TouchPoint>>,
     tapped: Vec<Vec2>,
     pub clicked: HashSet<String>,
@@ -41,16 +40,8 @@ pub struct Renderer {
 }
 
 impl Renderer {
-    pub fn new(width: i32, height: i32) -> Self {
+    pub fn new() -> Self {
         Renderer {
-            kaolin: Kaolin::new((width, height), move |text, config| {
-                let TextDimensions {
-                    width,
-                    height,
-                    offset_y,
-                } = measure_text(text, None, config.font_size as u16, 1.0);
-                (width.into(), config.font_size as f64 * 1.1)
-            }),
             touches: HashMap::new(),
             tapped: vec![],
             clicked: HashSet::new(),
@@ -121,6 +112,12 @@ impl<'frame> KaolinRenderer<'frame, Color, &'frame str> for Renderer {
                 }
             };
         }
+
+        let y_scroll = mouse_wheel().1;
+        if y_scroll != 0.0 {
+            self.scroll += y_scroll.signum() * 30.;
+        }
+
         self.scroll += self.scrolling;
         if self.scroll > 0. {
             self.scroll = 0.;
@@ -132,7 +129,16 @@ impl<'frame> KaolinRenderer<'frame, Color, &'frame str> for Renderer {
         }
 
         self.clicked.clear();
-        let commands = self.kaolin.draw(draw_fn);
+
+        let kaolin = Kaolin::new(
+            (screen_width() as i32, screen_height() as i32),
+            move |text, config| {
+                let TextDimensions { width, .. } =
+                    measure_text(text, None, config.font_size as u16, 1.0);
+                (width.into(), config.font_size as f64 * 1.1)
+            },
+        );
+        let commands = kaolin.draw(draw_fn);
         for command in commands {
             match command {
                 RenderCommand::DrawRectangle {
@@ -168,7 +174,10 @@ impl<'frame> KaolinRenderer<'frame, Color, &'frame str> for Renderer {
                             width as f32,
                             height as f32,
                         );
-                        if self.tapped.iter().any(|t| rect.contains(*t)) {
+                        if self.tapped.iter().any(|t| rect.contains(*t))
+                            || (is_mouse_button_pressed(MouseButton::Left)
+                                && rect.contains(mouse_position().into()))
+                        {
                             self.clicked.insert(custom.to_owned());
                         }
                     }
@@ -190,14 +199,7 @@ impl<'frame> KaolinRenderer<'frame, Color, &'frame str> for Renderer {
                         color.0,
                     );
                 }
-                RenderCommand::Custom {
-                    id,
-                    x,
-                    y,
-                    width,
-                    height,
-                    data,
-                } => todo!(),
+                RenderCommand::Custom { .. } => todo!(),
             }
         }
     }

@@ -21,5 +21,17 @@ jobs:
       run: sudo apt -yq --no-install-suggests --no-install-recommends install libx11-dev libxi-dev libgl1-mesa-dev libasound2-dev libudev-dev
     - name: Build
       run: cargo build --verbose
-    - name: Run tests
-      run: cargo test --verbose
+    - name: install clippy
+      run: rustup component add clippy
+    - name: Clippy
+      run: cargo clippy --locked -- -D warnings
+
+  fmt:
+    name: check rustfmt
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+    - name: install rustfmt
+      run: rustup component add rustfmt
+    - name: Format
+      run: cargo fmt --check

@@ -17,7 +17,7 @@ struct HostState {
 #[macroquad::main("fireflydroid")]
 async fn main() {
     set_panic_handler(|msg, backtrace| async move {
-        let mut ui = ui::Renderer::new(screen_width() as i32, screen_height() as i32);
+        let mut ui = ui::Renderer::new();
 
         loop {
             clear_background(RED);
@@ -65,7 +65,7 @@ async fn play(id: &FullID) -> Result<(), firefly_runtime::Error> {
     };
     let mut runtime = firefly_runtime::Runtime::new(config)?;
     runtime.start()?;
-    loop {
+    while !is_key_pressed(KeyCode::Escape) {
         clear_background(GRAY);
 
         let exit = runtime.update()?;
@@ -113,6 +113,7 @@ async fn play(id: &FullID) -> Result<(), firefly_runtime::Error> {
 
         next_frame().await;
     }
+    Ok(())
 }
 
 struct UiPos {
