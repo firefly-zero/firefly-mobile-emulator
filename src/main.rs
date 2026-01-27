@@ -185,10 +185,3 @@ fn dir() -> PathBuf {
 
     dirs.cache_dir().to_owned()
 }
-
-// DON'T REMOVE, This function is the entrypoint on Android.
-#[cfg(target_os = "android")]
-#[unsafe(no_mangle)]
-pub extern "C" fn quad_main() {
-    main();
-}
