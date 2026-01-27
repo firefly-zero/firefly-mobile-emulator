@@ -1,13 +1,13 @@
-
+use crate::ui::gestures::{Gesture, gesture};
+use kaolin::{
+    Kaolin, commands::RenderCommand, kaolin::scope::KaolinScope, renderers::KaolinRenderer,
+    style::KaolinColor,
+};
+use macroquad::{miniquad::date::now, prelude::*};
 use std::{
     collections::{HashMap, HashSet},
-    f32::consts::FRAC_PI_4,ops::Sub,
+    ops::Sub,
 };
-
-use kaolin::prelude::*;
-use macroquad::{miniquad::date::now, prelude::*};
-
-use crate::ui::gestures::{Gesture, gesture};
 
 mod gestures;
 
