@@ -11,11 +11,13 @@ crate-type = ["cdylib"]
 [dependencies]
 directories = "6.0.0"
 embedded-graphics = "0.8.1"
-firefly-hal = {path = "../firefly-hal"}
-firefly-runtime = {path = "../firefly-runtime"}
+firefly-hal = "0.3.1"
+firefly-runtime = "0.9.1"
 firefly-types = "0.7.1"
-kaolin = { path = "../kaolin"}
+# kaolin = { path = "../kaolin"}
+kaolin = "0.1.15"
 macroquad = { version = "0.4.14", features = ["backtrace"] }
 miniserde = "0.1.45"
+typed_floats = "1.0.7"
 ureq = "3.1.4"
 zip = { version = "7.0.0", default-features = false, features = ["zstd"] }

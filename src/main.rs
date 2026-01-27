@@ -2,7 +2,10 @@ use std::path::PathBuf;
 
 use firefly_hal::{DeviceConfig, DeviceImpl};
 use firefly_runtime::{FullID, NetHandler};
-use kaolin::{prelude::*, style::TextStyle};
+use kaolin::renderers::KaolinRenderer;
+use kaolin::style::layout::{Direction, Layout};
+use kaolin::style::{FlexStyle, TextStyle};
+use kaolin::{grow, sizing};
 use macroquad::prelude::*;
 
 mod catalog;
