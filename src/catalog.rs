@@ -3,7 +3,6 @@ use firefly_types::Encode as _;
 use kaolin::prelude::*;
 use macroquad::prelude::*;
 use miniserde::Deserialize;
-use std::collections::HashMap;
 
 use crate::{
     dir,
@@ -17,31 +16,32 @@ const LIST_URL: &str = "https://catalog.fireflyzero.com/apps.json";
 struct ShortApp {
     id: String,
     name: String,
-    author: String,
     short: String,
-    added: String,
 }
 
 #[derive(Deserialize)]
 struct App {
     name: String,
-    author: Author,
-    short: String,
-    added: String,
     download: String,
     desc: String,
-    links: Option<HashMap<String, String>>,
     categories: Vec<String>,
 }
 
-#[derive(Deserialize)]
-struct Author {
-    name: String,
-    pronouns: Option<String>,
-    links: HashMap<String, String>,
-    short: String,
-    about: Option<String>,
-}
+const TITLE_FONT_SIZE: f32 = if cfg!(target_os = "android") {
+    150.
+} else {
+    80.
+};
+const BUTTON_FONT_SIZE: f32 = if cfg!(target_os = "android") {
+    120.
+} else {
+    50.
+};
+const DESCR_FONT_SIZE: f32 = if cfg!(target_os = "android") {
+    80.
+} else {
+    30.
+};
 
 pub async fn list() {
     let resp = match ureq::get(LIST_URL).call() {
@@ -65,14 +65,16 @@ pub async fn list() {
     let mut ui = ui::Renderer::new();
     let name_width = apps
         .iter()
-        .map(|app| measure_text(&app.name, None, 80, 1.).width as u32)
+        .map(|app| measure_text(&app.name, None, DESCR_FONT_SIZE as _, 1.).width as u32)
         .max()
         .unwrap()
         .min(screen_width() as u32 / 3) as f64;
     while !is_key_pressed(KeyCode::Escape) {
         clear_background(GRAY);
         ui.draw(|k| {
-            let style = TextStyle::new().font_size(80.0).color(BLACK.into());
+            let style = TextStyle::new()
+                .font_size(DESCR_FONT_SIZE)
+                .color(BLACK.into());
             k.styled(
                 FlexStyle::new()
                     .background_color(GRAY.into())
@@ -91,7 +93,9 @@ pub async fn list() {
                         |k| {
                             k.text(
                                 "Catalog",
-                                TextStyle::new().font_size(150.0).color(BLACK.into()),
+                                TextStyle::new()
+                                    .font_size(TITLE_FONT_SIZE)
+                                    .color(BLACK.into()),
                             )
                         },
                     )
@@ -143,6 +147,9 @@ pub async fn list() {
         });
 
         if let Some(id) = ui.clicked.iter().next() {
+            // clear clicks
+            next_frame().await;
+            // render app info
             app(id).await;
             if is_key_down(KeyCode::Escape) {
                 return;
@@ -176,20 +183,24 @@ pub async fn app(id: &str) {
     while !is_key_pressed(KeyCode::Back) && !is_key_pressed(KeyCode::Escape) {
         clear_background(GRAY);
         ui.draw(|k| {
-            let style = TextStyle::new().font_size(80.0).color(BLACK.into());
+            let style = TextStyle::new()
+                .font_size(DESCR_FONT_SIZE)
+                .color(BLACK.into());
             k.styled(
                 FlexStyle::new()
                     .background_color(GRAY.into())
                     .layout(Layout::new().direction(Direction::TopToBottom).gap(20.))
                     .sizing(sizing!(grow!())),
-                |k| {
+                |mut k| {
                     let action = if cache.exists() { "Run" } else { "Download" };
-                    k.text(
+                    k = k.text(
                         &app.name,
-                        TextStyle::new().font_size(150.0).color(BLACK.into()),
-                    )
-                    .text(&app.short, style)
-                    .styled(
+                        TextStyle::new()
+                            .font_size(TITLE_FONT_SIZE)
+                            .color(BLACK.into()),
+                    );
+                    k = k.text(&app.desc, style);
+                    k = k.styled(
                         FlexStyle::new()
                             .border(Border {
                                 width: 10.,
@@ -198,8 +209,17 @@ pub async fn app(id: &str) {
                             .layout(Layout::new().justification(Justification::Center))
                             .sizing(sizing!(grow!(), fit!()))
                             .custom(action),
-                        |k| k.text(action, style.font_size(120.).color(GREEN.into())),
-                    )
+                        |k| {
+                            k.text(
+                                action,
+                                style.font_size(BUTTON_FONT_SIZE).color(GREEN.into()),
+                            )
+                        },
+                    );
+                    for cat in &app.categories {
+                        k = k.text(cat, style);
+                    }
+                    k
                 },
             )
         });
