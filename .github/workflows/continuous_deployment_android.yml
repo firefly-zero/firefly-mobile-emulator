@@ -12,7 +12,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - run: docker run --rm -v $(pwd)":/root/src" -w /root/src notfl3/cargo-apk sh android.sh
+      - run: docker run --rm -v $(pwd)":/root/src" -w /root/src notfl3/cargo-apk cargo quad-apk build --release
       - run: mkdir dist
       - run: cp target/android-artifacts/release/apk/fireflydroid.apk dist/firefly.apk
 
