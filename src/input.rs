@@ -19,6 +19,22 @@ pub fn input(ui: &UiPos) -> InputState {
         }
     }
 
+    if is_key_down(KeyCode::Left) || is_key_down(KeyCode::Key4) {
+        pad.get_or_insert_default().x = -1000;
+    }
+    if is_key_down(KeyCode::Right) || is_key_down(KeyCode::Key6) {
+        pad.get_or_insert_default().x = 1000;
+    }
+    if is_key_down(KeyCode::Up) || is_key_down(KeyCode::Key8) {
+        pad.get_or_insert_default().y = 1000;
+    }
+    if is_key_down(KeyCode::Down) || is_key_down(KeyCode::Key2) {
+        pad.get_or_insert_default().y = -1000;
+    }
+    if is_key_down(KeyCode::Key5) {
+        pad.get_or_insert_default();
+    }
+
     let mut buttons = 0;
     for touch in touches() {
         let p = touch.position;
@@ -28,7 +44,21 @@ pub fn input(ui: &UiPos) -> InputState {
             }
         }
     }
-    if is_key_down(KeyCode::Back) {
+
+    if is_key_down(KeyCode::Z) || is_key_down(KeyCode::Enter) || is_key_down(KeyCode::Space) {
+        buttons |= 1 << 0;
+    }
+    if is_key_down(KeyCode::X) || is_key_down(KeyCode::B) || is_key_down(KeyCode::Backspace) {
+        buttons |= 1 << 1;
+    }
+    if is_key_down(KeyCode::A) {
+        buttons |= 1 << 2;
+    }
+    if is_key_down(KeyCode::Y) || is_key_down(KeyCode::S) {
+        buttons |= 1 << 3;
+    }
+
+    if is_key_down(KeyCode::Back) || is_key_down(KeyCode::Tab) {
         // Menu key
         buttons |= 1 << 4;
     }

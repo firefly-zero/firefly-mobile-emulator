@@ -112,6 +112,12 @@ impl<'frame> KaolinRenderer<'frame, Color, &'frame str> for Renderer {
                 }
             };
         }
+
+        let y_scroll = mouse_wheel().1;
+        if y_scroll != 0.0 {
+            self.scroll += y_scroll.signum() * 30.;
+        }
+
         self.scroll += self.scrolling;
         if self.scroll > 0. {
             self.scroll = 0.;
@@ -168,7 +174,10 @@ impl<'frame> KaolinRenderer<'frame, Color, &'frame str> for Renderer {
                             width as f32,
                             height as f32,
                         );
-                        if self.tapped.iter().any(|t| rect.contains(*t)) {
+                        if self.tapped.iter().any(|t| rect.contains(*t))
+                            || (is_mouse_button_pressed(MouseButton::Left)
+                                && rect.contains(mouse_position().into()))
+                        {
                             self.clicked.insert(custom.to_owned());
                         }
                     }

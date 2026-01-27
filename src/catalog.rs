@@ -69,7 +69,7 @@ pub async fn list() {
         .max()
         .unwrap()
         .min(screen_width() as u32 / 3) as f64;
-    loop {
+    while !is_key_pressed(KeyCode::Escape) {
         clear_background(GRAY);
         ui.draw(|k| {
             let style = TextStyle::new().font_size(80.0).color(BLACK.into());
@@ -144,6 +144,9 @@ pub async fn list() {
 
         if let Some(id) = ui.clicked.iter().next() {
             app(id).await;
+            if is_key_down(KeyCode::Escape) {
+                return;
+            }
         }
 
         next_frame().await
@@ -170,7 +173,7 @@ pub async fn app(id: &str) {
     let cache = dir().join("roms").join(id.author()).join(id.app());
 
     let mut ui = ui::Renderer::new();
-    while !is_key_pressed(KeyCode::Back) {
+    while !is_key_pressed(KeyCode::Back) && !is_key_pressed(KeyCode::Escape) {
         clear_background(GRAY);
         ui.draw(|k| {
             let style = TextStyle::new().font_size(80.0).color(BLACK.into());
@@ -233,7 +236,11 @@ pub async fn app(id: &str) {
                 archive.extract(&cache).unwrap();
             }
             Some("Run") => match crate::play(&id).await {
-                Ok(()) => (),
+                Ok(()) => {
+                    if is_key_pressed(KeyCode::Escape) {
+                        return;
+                    }
+                }
                 Err(e) => loop {
                     clear_background(WHITE);
                     draw_text(&e.to_string(), 0., 100., 30., BLACK);

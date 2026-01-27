@@ -65,7 +65,7 @@ async fn play(id: &FullID) -> Result<(), firefly_runtime::Error> {
     };
     let mut runtime = firefly_runtime::Runtime::new(config)?;
     runtime.start()?;
-    loop {
+    while !is_key_pressed(KeyCode::Escape) {
         clear_background(GRAY);
 
         let exit = runtime.update()?;
@@ -113,6 +113,7 @@ async fn play(id: &FullID) -> Result<(), firefly_runtime::Error> {
 
         next_frame().await;
     }
+    Ok(())
 }
 
 struct UiPos {
