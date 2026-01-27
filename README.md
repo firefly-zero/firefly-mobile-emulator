@@ -1,8 +1,11 @@
-# Firefly Zero emulator for android
+# firefly-mobile-emulator
 
-## Compilation instructions
+Emulator for running Firefly Zero apps and games on Android and iOS. Powered by [macroquad](https://macroquad.rs/).
 
-At present you need to install Rustroid on your phone, clone this repository and
-run it directly from there or generate an apk from there.
-We will soon also provide automatically generated apks via github actions
-and the ability to cross compile from a desktop computer and produce an apk from there.
+The projects is highly experimental and is in the early development stage.
+
+Tested to work only with Android. Go to [Releases](https://github.com/firefly-zero/firefly-mobile-emulator/releases) to download the latest apk.
+
+## Build
+
+TBD
