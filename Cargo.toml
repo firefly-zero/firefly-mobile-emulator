@@ -2,11 +2,6 @@
 name = "fireflydroid"
 version = "0.1.0"
 edition = "2024"
-autobins = false
-
-[lib]
-path = "src/main.rs"
-crate-type = ["cdylib"]
 
 [dependencies]
 directories = "6.0.0"
