@@ -62,7 +62,7 @@ pub async fn list() {
         Ok(apps) => apps,
         Err(_) => todo!(),
     };
-    let mut ui = ui::Renderer::new(screen_width() as i32, screen_height() as i32);
+    let mut ui = ui::Renderer::new();
     let name_width = apps
         .iter()
         .map(|app| measure_text(&app.name, None, 80, 1.).width as u32)
@@ -169,7 +169,7 @@ pub async fn app(id: &str) {
 
     let cache = dir().join("roms").join(id.author()).join(id.app());
 
-    let mut ui = ui::Renderer::new(screen_width() as i32, screen_height() as i32);
+    let mut ui = ui::Renderer::new();
     while !is_key_pressed(KeyCode::Back) {
         clear_background(GRAY);
         ui.draw(|k| {

@@ -17,7 +17,7 @@ struct HostState {
 #[macroquad::main("fireflydroid")]
 async fn main() {
     set_panic_handler(|msg, backtrace| async move {
-        let mut ui = ui::Renderer::new(screen_width() as i32, screen_height() as i32);
+        let mut ui = ui::Renderer::new();
 
         loop {
             clear_background(RED);
