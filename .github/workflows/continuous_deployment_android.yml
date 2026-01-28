@@ -10,9 +10,13 @@ jobs:
   release:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - name: checkout repo
+        uses: actions/checkout@v4
 
-      - run: docker run --rm -v $(pwd)":/root/src" -w /root/src notfl3/cargo-apk cargo quad-apk build --release
+      - name: build cargo-quad-apk docker image
+        run: docker build https://github.com/not-fl3/cargo-quad-apk.git
+      - name: run cargo quad-apk inside docker image
+        run: docker run --rm -v $(pwd)":/root/src" -w /root/src notfl3/cargo-apk cargo quad-apk build --release
       - run: mkdir dist
       - run: cp target/android-artifacts/release/apk/fireflydroid.apk dist/firefly.apk
 
