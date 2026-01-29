@@ -6,7 +6,7 @@ use std::{
 use kaolin::prelude::*;
 use macroquad::{miniquad::date::now, prelude::*};
 
-use crate::ui::gestures::{Gesture, gesture};
+use crate::ui::gestures::{gesture, Gesture};
 
 mod gestures;
 
