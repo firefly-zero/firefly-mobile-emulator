@@ -9,6 +9,8 @@ on:
 jobs:
   release:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
     steps:
       - name: checkout repo
         uses: actions/checkout@v4
@@ -19,12 +21,12 @@ jobs:
         run: docker run --rm -v $(pwd)":/root/src" -w /root/src oli-obk/cargo-quad-apk cargo quad-apk build --release
       - run: mkdir dist
       - run: cp target/android-artifacts/release/apk/fireflydroid.apk dist/firefly.apk
-
       - uses: peaceiris/actions-gh-pages@v4
         if: github.ref == 'refs/heads/main'
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           publish_dir: ./dist
           keep_files: true
+
 
 
