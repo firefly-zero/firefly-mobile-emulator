@@ -14,9 +14,9 @@ jobs:
         uses: actions/checkout@v4
 
       - name: build cargo-quad-apk docker image
-        run: docker build https://github.com/oli-obk/android-rs-glue.git
+        run: docker build -t oli-obk/cargo-quad-apk https://github.com/oli-obk/android-rs-glue.git
       - name: run cargo quad-apk inside docker image
-        run: docker run --rm -v $(pwd)":/root/src" -w /root/src notfl3/cargo-apk cargo quad-apk build --release
+        run: docker run --rm -v $(pwd)":/root/src" -w /root/src oli-obk/cargo-quad-apk cargo quad-apk build --release
       - run: mkdir dist
       - run: cp target/android-artifacts/release/apk/fireflydroid.apk dist/firefly.apk
 
